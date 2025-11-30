@@ -1,0 +1,42 @@
+name: Integración y Cobertura de Código
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout del Código
+        uses: actions/checkout@v3
+
+      - name: 2. Construir y Levantar Contenedores Docker
+        run: docker compose -p granferia up -d --build
+
+      - name: 3. Esperar que la Base de Datos esté lista
+        run: sleep 15
+
+      - name: 4. Crear Base de Datos 'granferia'
+        run: docker exec granferia_db sh -c 'exec mysql -uroot -proot -e "CREATE DATABASE IF NOT EXISTS granferia;"'
+
+      - name: 5. Cargar Base de Datos (Esquema y Datos)
+        run: cat database.sql | docker exec -i granferia_db mysql -uroot -proot granferia
+
+      - name: 6. Ejecutar Pruebas PHPUnit y Generar Reporte de Cobertura
+        run: docker exec granferia_web phpunit --configuration phpunit.xml --coverage-clover coverage.xml
+
+      - name: 6.5 Copiar coverage.xml al runner
+        run: docker cp granferia_web:/var/www/html/coverage.xml coverage.xml
+
+      - name: 7. Subir Reporte a Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true
