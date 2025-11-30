@@ -4,7 +4,7 @@
          colors="true">
 
     <testsuites>
-        <testsuite name="Pruebas Unitarias La Gran Feria del Juguete">
+        <testsuite name="Pruebas Unitarias La Feria del Juguete">
             <directory>tests</directory>
         </testsuite>
     </testsuites>

@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 // Incluir la función que vamos a probar
 require_once __DIR__ . '/../funciones/utilidades_conexion.php';
 
-class PruebaConexionBD extends TestCase
+class PruebaConexionBDTest extends TestCase
 {
     /**
      * @covers ::verificar_conexion_bd

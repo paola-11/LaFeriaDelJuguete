@@ -5,7 +5,7 @@ pipeline {
 
         stage('Clonar repositorio') {
             steps {
-                git url: 'https://github.com/paola-11/LaGranFeriaDelJuguete_.git', branch: 'main'
+                git url: 'https://github.com/paola-11/LaFeriaDelJuguete.git', branch: 'main'
             }
         }
 
