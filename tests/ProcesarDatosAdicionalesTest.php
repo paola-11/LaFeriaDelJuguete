@@ -2,64 +2,95 @@
 
 use PHPUnit\Framework\TestCase;
 
+// Nota: No se necesitan setUp/tearDown para simular superglobales 
+// si usamos las anotaciones @runInSeparateProcess, que es más seguro para la sesión.
+
 class ProcesarDatosAdicionalesTest extends TestCase
 {
-    private $backupServer;
-    private $backupPost;
-    private $backupSession;
-
-    protected function setUp(): void
-    {
-        // Respaldar variables superglobales
-        $this->backupServer = $_SERVER;
-        $this->backupPost = $_POST;
-        $this->backupSession = $_SESSION ?? [];
-
-        // Simular petición POST
-        $_SERVER['REQUEST_METHOD'] = 'POST';
-        $_POST['direccion'] = 'Calle 123';
-        $_POST['celular'] = '3001234567';
-
-        // Simular sesión
-        $_SESSION = [];
-        $_SESSION['cdusu'] = 1;
+    private $funcionPath = __DIR__ . '/../funciones/procesar_datos_adicionales.php';
+    private $cdped_de_prueba = 1; // ID del registro que debe existir en la tabla PEDIDO (ya insertado)
+    
+    /**
+     * @return PDO
+     */
+    private function obtenerConexionDB() {
+        // *** IMPORTANTE: REEMPLAZA ESTO CON TUS CREDENCIALES FUNCIONALES ***
+        // Estas credenciales deben ser las que ya arreglaste en Docker.
+        $host = 'db'; 
+        $db = 'granferia'; 
+        $user = 'usuario'; 
+        $pass = 'usuario123'; 
+        
+        try {
+            // Se usa PDO para asegurar compatibilidad con mysqli (que usa tu función) 
+            // y para poder hacer la verificación aquí.
+            $conn = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $user, $pass);
+            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            return $conn;
+        } catch (PDOException $e) {
+            // Si esto falla, significa que el error de 'Access denied' aún no está 100% resuelto.
+            $this->fail("Fallo la conexión a la base de datos de prueba: " . $e->getMessage());
+        }
     }
 
-    protected function tearDown(): void
-    {
-        $_SERVER = $this->backupServer;
-        $_POST = $this->backupPost;
-        $_SESSION = $this->backupSession;
-    }
-
+    /**
+     * @runInSeparateProcess
+     * @preserveGlobalState disabled
+     * @coversNothing
+     */
     public function testProcesarDatosAdicionalesActualizaCorrectamente()
     {
-        // Crear mock de PDOStatement
-        $mockStmt = $this->createMock(PDOStatement::class);
+        // 1. SIMULACIÓN DE ENTORNO
+        
+        $nueva_direccion = 'Nueva Direccion Test 2025';
+        $nuevo_celular = '3219876543';
+        
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_POST['direccion'] = $nueva_direccion;
+        $_POST['celular'] = $nuevo_celular;
 
-        // Indicar que execute() debe retornar true (éxito)
-        $mockStmt->expects($this->once())
-                 ->method('execute')
-                 ->willReturn(true);
+        // 2. SIMULACIÓN DE SESIÓN (cdusu = 1, que debe ser un registro existente en PEDIDO)
+        @session_start();
+        $_SESSION['cdusu'] = $this->cdped_de_prueba; 
+        @session_write_close();
 
-        // Crear mock de PDO para que prepare() retorne el mock del statement
-        $mockConn = $this->createMock(PDO::class);
-        $mockConn->expects($this->once())
-                 ->method('prepare')
-                 ->willReturn($mockStmt);
+        // 3. EXPECTATIVAS DE SALIDA
+        // Captura el echo del script PHP
+        $this->expectOutputString("Información actualizada correctamente en la base de datos");
 
-        // Hacer que $conn esté disponible dentro del archivo que vamos a incluir
-        $conn = $mockConn;
+        // 4. EJECUCIÓN DEL CÓDIGO A PROBAR
+        include $this->funcionPath;
+        
+        // 5. VERIFICACIÓN DEL ESTADO DE LA BASE DE DATOS (Lo más importante)
+        
+        $conn = $this->obtenerConexionDB();
+        
+        // Consulta para obtener el registro actualizado
+        $stmt = $conn->prepare("SELECT dirpedusu, celusuped FROM PEDIDO WHERE cdped = :cdped");
+        $stmt->bindParam(':cdped', $this->cdped_de_prueba);
+        $stmt->execute();
+        $datos_actualizados = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // Capturar salida del script
-        ob_start();
-        include __DIR__ . '/../funciones/procesar_datos_adicionales.php';
-        $output = ob_get_clean();
-
-        // Verificar que el script imprimió éxito
-        $this->assertStringContainsString(
-            "Información actualizada correctamente en la base de datos",
-            $output
+        // AFIRMACIONES: Comprobar que los valores en la DB son los enviados
+        $this->assertEquals(
+            $nueva_direccion, 
+            $datos_actualizados['dirpedusu'], 
+            "FALLO: La dirección no se actualizó correctamente en la DB."
         );
+        $this->assertEquals(
+            $nuevo_celular, 
+            $datos_actualizados['celusuped'], 
+            "FALLO: El celular no se actualizó correctamente en la DB."
+        );
+    }
+    
+    // Limpieza de superglobales y sesión después de cada prueba
+    protected function tearDown(): void
+    {
+        $_POST = [];
+        $_SERVER = [];
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
     }
 }
