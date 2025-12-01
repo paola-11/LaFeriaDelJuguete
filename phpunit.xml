@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
-         colors="true">
+         colors="true"
+         bootstrap="tests/bootstrap.php">
 
     <testsuites>
         <testsuite name="Pruebas Unitarias La Feria del Juguete">
@@ -24,6 +25,6 @@
     <coverage>
         <report>
             <clover outputFile="coverage.xml"/>
-            </report>
+        </report>
     </coverage>
-    </phpunit>
+</phpunit>
