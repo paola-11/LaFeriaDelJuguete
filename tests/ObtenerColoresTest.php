@@ -1,6 +1,8 @@
 <?php
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/bootstrap.php'; // Inicializa $_SERVER y $conn
+
 class ObtenerColoresTest extends TestCase
 {
     public function testObtenerColoresSimulado()
@@ -19,23 +21,18 @@ class ObtenerColoresTest extends TestCase
         $pdoMock = $this->createMock(PDO::class);
         $pdoMock->method('prepare')->willReturn($stmtMock);
 
-        // Inyectar el mock en lugar de $conn
+        // Inyectar mock en $conn antes de incluir el script
         $conn = $pdoMock;
-
-        // Evitar que el include de conexion.php falle
-        // Nota: Esto no cambia tu aplicación, solo afecta el test
-        if (!isset($conn)) {
-            $conn = $pdoMock;
-        }
 
         // Capturar salida del script
         ob_start();
-        include __DIR__ . '/../Funciones/Busquedas/obtener_colores.php';
+        include __DIR__ . '/../funciones/busquedas/obtener_colores.php';
         $output = ob_get_clean();
 
+        // Decodificar JSON
         $response = json_decode($output, true);
 
-        // Verificar que sea un array con los colores simulados
+        // Validaciones
         $this->assertIsArray($response);
         $this->assertCount(3, $response);
         $this->assertEquals('Rojo', $response[0]['color']);
