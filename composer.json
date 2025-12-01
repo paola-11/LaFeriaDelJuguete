@@ -1,0 +1,14 @@
+{
+    "require-dev": {
+        "phpunit/phpunit": "^10.0"
+    },
+    "autoload": {
+        "files": [
+            "funciones/conexion.php",
+            "funciones/LoginService.php",
+            "funciones/procesar_datos_adicionales.php",
+            "funciones/utilidades_conexion.php"
+           
+        ]
+    }
+}
