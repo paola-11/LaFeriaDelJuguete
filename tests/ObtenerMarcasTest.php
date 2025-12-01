@@ -1,4 +1,4 @@
-<?php
+<?php 
 use PHPUnit\Framework\TestCase;
 
 class ObtenerMarcasTest extends TestCase
@@ -22,9 +22,9 @@ class ObtenerMarcasTest extends TestCase
         // Inyectar el mock en lugar de $conn
         $conn = $pdoMock;
 
-        // Capturar salida
+        // Capturar salida del script
         ob_start();
-        include __DIR__ . '/../funciones/busquedas/obtener_marcas.php'; // ruta correcta
+        include __DIR__ . '/../Funciones/Busquedas/obtener_marcas.php'; // ruta correcta
         $output = ob_get_clean();
 
         $response = json_decode($output, true);

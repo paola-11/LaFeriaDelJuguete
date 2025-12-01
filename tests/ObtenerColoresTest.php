@@ -22,9 +22,15 @@ class ObtenerColoresTest extends TestCase
         // Inyectar el mock en lugar de $conn
         $conn = $pdoMock;
 
+        // Evitar que el include de conexion.php falle
+        // Nota: Esto no cambia tu aplicación, solo afecta el test
+        if (!isset($conn)) {
+            $conn = $pdoMock;
+        }
+
         // Capturar salida del script
         ob_start();
-        include __DIR__ . '/../Funciones/Busquedas/obtener_colores.php'; // ruta correcta
+        include __DIR__ . '/../Funciones/Busquedas/obtener_colores.php';
         $output = ob_get_clean();
 
         $response = json_decode($output, true);
@@ -37,3 +43,4 @@ class ObtenerColoresTest extends TestCase
         $this->assertEquals('Verde', $response[2]['color']);
     }
 }
+

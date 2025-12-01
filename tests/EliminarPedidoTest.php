@@ -8,7 +8,7 @@ class EliminarPedidoTest extends TestCase
         // Simular POST
         $_POST['cdped'] = 123;
 
-        // Variables para verificar bindParam
+        // Array para capturar los parámetros pasados a bindParam
         $boundParams = [];
 
         // Mock de PDOStatement
@@ -17,11 +17,12 @@ class EliminarPedidoTest extends TestCase
         // Capturar bindParam
         $stmtMock->method('bindParam')
                  ->willReturnCallback(function($param, &$value) use (&$boundParams) {
+                     // Guardar la referencia, para luego verificar
                      $boundParams[$param] = $value;
                      return true;
                  });
 
-        // Configurar fetch() para SELECT
+        // Configurar fetch() para SELECT (simula obtener el pedido)
         $stmtMock->method('fetch')
                  ->willReturn(['cdpro' => 10, 'cantidad' => 5]);
 
@@ -38,21 +39,22 @@ class EliminarPedidoTest extends TestCase
         $pdoMock->method('prepare')
                 ->willReturn($stmtMock);
 
-        // Capturar salida
+        // Inyectar el mock de PDO en lugar de la conexión real
+        $conn = $pdoMock;
+
+        // Capturar salida del script
         ob_start();
-        $conn = $pdoMock; // Inyectar el mock de PDO
         include __DIR__ . '/../Funciones/Pedidos/eliminar_pedido.php';
         $output = ob_get_clean();
 
         $response = json_decode($output, true);
 
-        // Validaciones
+        // Validaciones principales
         $this->assertArrayHasKey('success', $response);
         $this->assertTrue($response['success']);
 
-        // Verificar que se pasó el cdped correcto
+        // Verificar que los parámetros se hayan pasado correctamente
         $this->assertEquals(123, $boundParams[':cdped']);
-        // Verificar que se pasó la cantidad y cdpro correctos
         $this->assertEquals(5, $boundParams[':cantidad']);
         $this->assertEquals(10, $boundParams[':cdpro']);
     }
